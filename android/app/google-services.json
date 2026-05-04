@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "876944865345",
+    "project_id": "second-mart-c5c09",
+    "storage_bucket": "second-mart-c5c09.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:876944865345:android:caa84b892db05e14592ec0",
+        "android_client_info": {
+          "package_name": "com.example.second_mart"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_y-2YiyRM9WVE3gJ_HRCLCzm7uAvZ22c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
