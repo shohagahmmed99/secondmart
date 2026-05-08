@@ -39,20 +39,26 @@ class _PrimaryViewState extends State<PrimaryView> {
         .ref('notifications/$uid')
         .onValue
         .listen((event) {
-      if (!mounted) return;
-      int count = 0;
-      if (event.snapshot.exists && event.snapshot.value != null) {
-        final data = Map<dynamic, dynamic>.from(
-          event.snapshot.value as Map,
-        );
-        for (final entry in data.values) {
-          if (entry is Map && entry['isRead'] == false) {
-            count++;
+          if (!mounted) return;
+
+          // Use a Set to count unique senders
+          final Set<String> unreadSenders = {};
+
+          if (event.snapshot.exists && event.snapshot.value != null) {
+            final data = Map<dynamic, dynamic>.from(
+              event.snapshot.value as Map,
+            );
+            for (final entry in data.values) {
+              if (entry is Map && entry['isRead'] == false) {
+                final senderId = entry['senderId']?.toString();
+                if (senderId != null) {
+                  unreadSenders.add(senderId);
+                }
+              }
+            }
           }
-        }
-      }
-      setState(() => _unreadCount = count);
-    });
+          setState(() => _unreadCount = unreadSenders.length);
+        });
   }
 
   void _listenToUnreadMessages() {
@@ -63,20 +69,23 @@ class _PrimaryViewState extends State<PrimaryView> {
         .ref('user_chats/$uid')
         .onValue
         .listen((event) {
-      if (!mounted) return;
-      int count = 0;
-      if (event.snapshot.exists && event.snapshot.value != null) {
-        final data = Map<dynamic, dynamic>.from(
-          event.snapshot.value as Map,
-        );
-        for (final entry in data.values) {
-          if (entry is Map) {
-            count += (entry['unreadCount'] as int? ?? 0);
+          if (!mounted) return;
+          int peopleCount = 0;
+          if (event.snapshot.exists && event.snapshot.value != null) {
+            final data = Map<dynamic, dynamic>.from(
+              event.snapshot.value as Map,
+            );
+            for (final entry in data.values) {
+              if (entry is Map) {
+                // Count this chat if it has at least one unread message
+                if ((entry['unreadCount'] as int? ?? 0) > 0) {
+                  peopleCount++;
+                }
+              }
+            }
           }
-        }
-      }
-      setState(() => _unreadMessageCount = count);
-    });
+          setState(() => _unreadMessageCount = peopleCount);
+        });
   }
 
   @override
@@ -88,25 +97,145 @@ class _PrimaryViewState extends State<PrimaryView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
         final bool? shouldExit = await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Exit App'),
-            content: const Text('Are you sure you want to exit the app?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('No', style: TextStyle(color: Colors.grey)),
+          barrierColor: Colors.black.withOpacity(0.5),
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Yes', style: TextStyle(color: Color(0xFF3498DB), fontWeight: FontWeight.bold)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon with gradient background
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3498DB).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.exit_to_app_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Exit Second Mart?',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Are you sure you want to leave the app?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      // Stay button
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(false),
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Stay',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Exit button
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(true),
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF3498DB,
+                                  ).withOpacity(0.4),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Exit',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
         if (shouldExit == true) {
@@ -117,12 +246,16 @@ class _PrimaryViewState extends State<PrimaryView> {
         length: 4,
         child: Scaffold(
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: theme.cardColor,
             toolbarHeight: selectedIndex == 0 ? kToolbarHeight : 20,
             title: selectedIndex == 0
                 ? const Text(
                     "Second Mart",
-                    style: TextStyle(color: Color(0xFF3498DB), fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Color(0xFF3498DB),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   )
                 : null,
             actionsPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -136,10 +269,11 @@ class _PrimaryViewState extends State<PrimaryView> {
                         "assets/images/searchh.png",
                         width: 24,
                         height: 24,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.black),
+                      icon: Icon(Icons.menu, color: theme.colorScheme.onSurface),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -147,13 +281,16 @@ class _PrimaryViewState extends State<PrimaryView> {
                             pageBuilder: (_, a, b) => const ProfileView(),
                             transitionsBuilder: (_, animation, b, child) {
                               return SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(1.0, 0.0),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOutCubic,
-                                )),
+                                position:
+                                    Tween<Offset>(
+                                      begin: const Offset(1.0, 0.0),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                    ),
                                 child: child,
                               );
                             },
@@ -184,10 +321,11 @@ class _PrimaryViewState extends State<PrimaryView> {
                             height: 24,
                             color: Color(0xFF3498DB),
                           )
-                        : const Image(
-                            image: AssetImage("assets/images/home.png"),
+                        : Image(
+                            image: const AssetImage("assets/images/home.png"),
                             width: 24,
                             height: 24,
+                            color: isDark ? Colors.grey[400] : null,
                           ),
                   ),
                   Tab(
@@ -198,17 +336,20 @@ class _PrimaryViewState extends State<PrimaryView> {
                             height: 28,
                             color: Color(0xFF3498DB),
                           )
-                        : const Image(
-                            image: AssetImage("assets/images/sell.png"),
+                        : Image(
+                            image: const AssetImage("assets/images/sell.png"),
                             width: 24,
                             height: 24,
+                            color: isDark ? Colors.grey[400] : null,
                           ),
                   ),
                   Tab(
                     icon: Badge(
                       isLabelVisible: _unreadMessageCount > 0,
                       label: Text(
-                        _unreadMessageCount > 99 ? '99+' : '$_unreadMessageCount',
+                        _unreadMessageCount > 99
+                            ? '99+'
+                            : '$_unreadMessageCount',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -218,15 +359,18 @@ class _PrimaryViewState extends State<PrimaryView> {
                       backgroundColor: const Color(0xFFFF4B6E),
                       child: (selectedIndex == 2)
                           ? const Image(
-                              image: AssetImage("assets/images/messenger_fill.png"),
+                              image: AssetImage(
+                                "assets/images/messenger_fill.png",
+                              ),
                               width: 24,
                               height: 24,
                               color: Color(0xFF3498DB),
                             )
-                          : const Image(
-                              image: AssetImage("assets/images/messenger.png"),
+                          : Image(
+                              image: const AssetImage("assets/images/messenger.png"),
                               width: 24,
                               height: 24,
+                              color: isDark ? Colors.grey[400] : null,
                             ),
                     ),
                   ),
@@ -252,11 +396,13 @@ class _PrimaryViewState extends State<PrimaryView> {
                               height: 24,
                               color: Color(0xFF3498DB),
                             )
-                          : const Image(
-                              image: AssetImage(
-                                  "assets/images/notification.png"),
+                          : Image(
+                              image: const AssetImage(
+                                "assets/images/notification.png",
+                              ),
                               width: 24,
                               height: 24,
+                              color: isDark ? Colors.grey[400] : null,
                             ),
                     ),
                   ),

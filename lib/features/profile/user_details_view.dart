@@ -162,17 +162,17 @@ class _UserDetailsViewState extends State<UserDetailsView> {
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFC9CCD1), // FB Lite gray background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         leading: BackButton(
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.onSurface,
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           displayName,
-          style: const TextStyle(color: Colors.black, fontSize: 18),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18),
         ),
       ),
       body: SingleChildScrollView(
@@ -180,7 +180,7 @@ class _UserDetailsViewState extends State<UserDetailsView> {
           children: [
             // Header Section (Cover + Profile Photo)
             Container(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               padding: const EdgeInsets.only(bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,7 +365,7 @@ class _UserDetailsViewState extends State<UserDetailsView> {
                           _userData?['bio'] ?? "Add Bio",
                           style: TextStyle(
                             color: _userData?['bio'] != null
-                                ? Colors.black87
+                                ? Theme.of(context).colorScheme.onSurface
                                 : Colors.grey,
                             fontSize: 16,
                           ),
@@ -383,11 +383,11 @@ class _UserDetailsViewState extends State<UserDetailsView> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _navigateToEditProfile,
-                              icon: const Icon(Icons.edit, color: Colors.black),
+                              icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
                               label: const Text("Edit Profile"),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey[200],
-                                foregroundColor: Colors.black,
+                                backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3A) : Colors.grey[200],
+                                foregroundColor: Theme.of(context).colorScheme.onSurface,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -398,14 +398,14 @@ class _UserDetailsViewState extends State<UserDetailsView> {
                           const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey[200],
+                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3A) : Colors.grey[200],
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: IconButton(
                               onPressed: () {},
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.more_horiz,
-                                color: Colors.black,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -465,7 +465,7 @@ class _UserDetailsViewState extends State<UserDetailsView> {
             InkWell(
               onTap: _isMe ? _navigateToEditProfile : null,
               child: Container(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 padding: const EdgeInsets.all(16),
                 width: double.infinity,
                 child: Column(
@@ -578,7 +578,7 @@ class _UserDetailsViewState extends State<UserDetailsView> {
               text,
               style: TextStyle(
                 fontSize: 16,
-                color: isPlaceholder ? Colors.blue[600] : Colors.black,
+                color: isPlaceholder ? Colors.blue[600] : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

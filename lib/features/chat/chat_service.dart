@@ -10,7 +10,8 @@ class ChatService {
     return uid1.compareTo(uid2) < 0 ? '${uid1}_$uid2' : '${uid2}_$uid1';
   }
 
-  static Future<void> sendMessage({
+ 
+   static Future<void> sendMessage({
     required String receiverId,
     required String text,
   }) async {

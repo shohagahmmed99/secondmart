@@ -91,6 +91,7 @@ class _LoginViewState extends State<LoginView> {
                   'Welcome Back',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -99,7 +100,9 @@ class _LoginViewState extends State<LoginView> {
                   'Sign in to continue',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                  ).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -178,7 +181,10 @@ class _LoginViewState extends State<LoginView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account?"),
+                    Text(
+                      "Don't have an account?",
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    ),
                     TextButton(
                       onPressed: () {
                         Navigator.push(

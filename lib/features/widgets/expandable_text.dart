@@ -16,10 +16,10 @@ class _ExpandableTextState extends State<ExpandableText> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textStyle = const TextStyle(
+        final textStyle = TextStyle(
           fontSize: 14,
           height: 1.4,
-          color: Color(0xFF1C1E21),
+          color: Theme.of(context).colorScheme.onSurface,
         );
 
         // Create a TextPainter to check if the text will overflow

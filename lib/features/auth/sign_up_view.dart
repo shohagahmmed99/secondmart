@@ -118,6 +118,7 @@ class _SignUpViewState extends State<SignUpView> {
                   'Create Account',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -126,7 +127,9 @@ class _SignUpViewState extends State<SignUpView> {
                   'Sign up to get started!',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                  ).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -235,7 +238,10 @@ class _SignUpViewState extends State<SignUpView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account?'),
+                    Text(
+                      'Already have an account?',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    ),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);

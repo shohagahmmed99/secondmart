@@ -188,7 +188,7 @@ class _SellViewState extends State<SellView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -198,10 +198,14 @@ class _SellViewState extends State<SellView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Image picker area
-                const Text(
-                  "Photos",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                  Text(
+                    "Photos",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 // --- Empty state: tap to pick ---
                 if (_pickedImages.isEmpty)
@@ -212,8 +216,10 @@ class _SellViewState extends State<SellView> {
                       height: 120,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        border: Border.all(color: Colors.grey.shade300),
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2A2A2A) : Colors.grey[50],
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3A) : Colors.grey.shade300,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -242,8 +248,10 @@ class _SellViewState extends State<SellView> {
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      border: Border.all(color: Colors.grey.shade300),
+                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2A2A2A) : Colors.grey[50],
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3A) : Colors.grey.shade300,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -270,10 +278,10 @@ class _SellViewState extends State<SellView> {
                                 borderRadius: BorderRadius.circular(8),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3A) : Colors.grey[100],
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.blue.shade200,
+                                      color: Theme.of(context).brightness == Brightness.dark ? Colors.blue.shade900 : Colors.blue.shade200,
                                       width: 1.5,
                                       style: BorderStyle.solid,
                                     ),
@@ -382,9 +390,13 @@ class _SellViewState extends State<SellView> {
                 const SizedBox(height: 24),
 
                 // Form Fields
-                const Text(
+                Text(
                   "Product Details",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -433,15 +445,18 @@ class _SellViewState extends State<SellView> {
                             ),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Colors.grey.shade50,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 16,
                           ),
                         ),
-                        hint: const Text(
+                        hint: Text(
                           "Select",
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade700,
+                          ),
                         ),
                         isExpanded: true,
                         initialValue: _selectedCategory,
@@ -550,9 +565,11 @@ class _SellViewState extends State<SellView> {
                               SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 12),
@@ -601,13 +618,21 @@ class _SellViewState extends State<SellView> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-        labelStyle: TextStyle(color: Colors.grey.shade700),
+        hintStyle: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade500 : Colors.grey.shade400,
+          fontSize: 14,
+        ),
+        labelStyle: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade300 : Colors.grey.shade700,
+        ),
         prefixIcon: Padding(
           padding: EdgeInsets.only(
             bottom: maxLines > 1 ? 60.0 : 0,
           ), // Align top if multiline
-          child: Icon(icon, color: Colors.grey.shade600),
+          child: Icon(
+            icon,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -622,7 +647,7 @@ class _SellViewState extends State<SellView> {
           borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
         ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Colors.grey.shade50,
         alignLabelWithHint: maxLines > 1,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

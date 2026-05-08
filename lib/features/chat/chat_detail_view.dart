@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'chat_service.dart';
 
 class ChatDetailView extends StatefulWidget {
@@ -23,10 +22,33 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  late Stream<List<Map<String, dynamic>>> _messagesStream;
+  bool _isTyping = false;
 
   @override
   void initState() {
     super.initState();
+    _messageController.addListener(() {
+      setState(() {
+        _isTyping = _messageController.text.trim().isNotEmpty;
+      });
+    });
+    final chatId = ChatService.getChatId(_currentUserId, widget.otherUserId);
+
+    _messagesStream = ChatService.getMessages(chatId).map((event) {
+      if (event.snapshot.value == null) return [];
+      final data = Map<dynamic, dynamic>.from(event.snapshot.value as Map);
+      final messages = data.values
+          .map((v) => Map<String, dynamic>.from(v as Map))
+          .toList();
+      messages.sort((a, b) {
+        final aTime = (a['timestamp'] ?? 0) as num;
+        final bTime = (b['timestamp'] ?? 0) as num;
+        return bTime.compareTo(aTime);
+      });
+      return messages;
+    });
+
     ChatService.markChatAsRead(widget.otherUserId);
   }
 
@@ -38,27 +60,25 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   }
 
   void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-
-    ChatService.sendMessage(
-      receiverId: widget.otherUserId,
-      text: text,
-    );
+    String text = _messageController.text.trim();
+    if (text.isEmpty) text = '👍';
+    ChatService.sendMessage(receiverId: widget.otherUserId, text: text);
     _messageController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-    final chatId = ChatService.getChatId(_currentUserId, widget.otherUserId);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.cardColor,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back,
+              color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -75,7 +95,8 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             const SizedBox(width: 10),
             Text(
               widget.otherUserName,
-              style: const TextStyle(color: Colors.black, fontSize: 16),
+              style: TextStyle(
+                  color: theme.colorScheme.onSurface, fontSize: 16),
             ),
           ],
         ),
@@ -83,54 +104,51 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<DatabaseEvent>(
-              stream: ChatService.getMessages(chatId),
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _messagesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                final messages = <Map<String, dynamic>>[];
-                if (snapshot.hasData && snapshot.data?.snapshot.value != null) {
-                  final data = Map<dynamic, dynamic>.from(
-                    snapshot.data!.snapshot.value as Map,
-                  );
-                  data.forEach((key, value) {
-                    messages.add(Map<String, dynamic>.from(value as Map));
-                  });
-                  messages.sort((a, b) => (a['timestamp'] as int).compareTo(b['timestamp'] as int));
-                }
-
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients) {
-                    _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-                  }
-                });
-
+                final messages = snapshot.data ?? [];
                 return ListView.builder(
                   controller: _scrollController,
+                  reverse: true,
                   padding: const EdgeInsets.all(12),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg['senderId'] == _currentUserId;
-
                     return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isMe ? const Color(0xFF0084FF) : Colors.white,
-                          borderRadius: BorderRadius.circular(20).copyWith(
-                            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(20),
-                            bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(0),
+                          color: isMe
+                              ? const Color(0xFF0084FF)
+                              : (isDark
+                                  ? const Color(0xFF2A2A2A)
+                                  : const Color(0xFFE4E6EB)),
+                          borderRadius:
+                              BorderRadius.circular(12).copyWith(
+                            bottomRight: isMe
+                                ? const Radius.circular(2)
+                                : const Radius.circular(12),
+                            bottomLeft: isMe
+                                ? const Radius.circular(12)
+                                : const Radius.circular(2),
                           ),
                         ),
                         child: Text(
                           msg['text'] ?? '',
                           style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black87,
+                            color: isMe
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
                             fontSize: 15,
                           ),
                         ),
@@ -141,40 +159,67 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               },
             ),
           ),
-          _buildInputArea(),
+          _buildInputArea(theme, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildInputArea() {
+  Widget _buildInputArea(ThemeData theme, bool isDark) {
     return Container(
-      padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE0E0E0))),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border(
+            top: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFFE0E0E0))),
       ),
       child: Row(
         children: [
+          IconButton(
+            icon: const Icon(Icons.add_photo_alternate,
+                color: Color(0xFF0084FF)),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.mic, color: Color(0xFF0084FF)),
+            onPressed: () {},
+          ),
           Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: "Type a message...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                fillColor: const Color(0xFFF0F2F5),
-                filled: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF3A3A3A)
+                        : Colors.grey.shade300),
               ),
-              onSubmitted: (_) => _sendMessage(),
+              child: TextField(
+                controller: _messageController,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  hintText: "Write a message...",
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                ),
+                onSubmitted: (_) => _sendMessage(),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           IconButton(
-            icon: const Icon(Icons.send, color: Color(0xFF0084FF)),
+            icon: Icon(
+              _isTyping ? Icons.send : Icons.thumb_up_alt,
+              color: const Color(0xFF0084FF),
+            ),
             onPressed: _sendMessage,
           ),
         ],

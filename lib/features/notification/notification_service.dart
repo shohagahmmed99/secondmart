@@ -14,20 +14,12 @@ class NotificationService {
     String? commentText,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    debugPrint('📬 sendNotification called: type=$type, receiverId=$receiverId, postId=$postId');
+    // debugPrint('📬 sendNotification called: type=$type, receiverId=$receiverId, postId=$postId');
 
     if (currentUser == null) {
-      debugPrint('❌ sendNotification: no logged-in user, aborting');
+      //   debugPrint('❌ sendNotification: no logged-in user, aborting');
       return false;
     }
-    /* 
-    // Skip — user is interacting with their own post
-    if (currentUser.uid == receiverId) {
-      debugPrint('⚠️ sendNotification: user acted on their own post, skipping');
-      return false;
-    }
-    */
-
     try {
       final ref = _db.ref('notifications/$receiverId').push();
       await ref.set({
@@ -38,13 +30,16 @@ class NotificationService {
         'timestamp': ServerValue.timestamp,
         'isRead': false,
       });
-      debugPrint('✅ Notification written to notifications/$receiverId/${ref.key}');
+      debugPrint(
+        '✅ Notification written to notifications/$receiverId/${ref.key}',
+      );
       return true;
     } catch (e) {
       debugPrint('❌ sendNotification write failed: $e');
       return false;
     }
   }
+
   static Future<void> markAllAsRead(String userId) async {
     final ref = _db.ref('notifications/$userId');
     final snap = await ref.get();

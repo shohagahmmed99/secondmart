@@ -6,6 +6,9 @@ import 'package:second_mart/features/notification/notification_service.dart';
 import 'package:second_mart/features/widgets/expandable_text.dart';
 import 'package:second_mart/features/home/widgets/comment_sheet.dart';
 import 'package:second_mart/features/widgets/post_image_grid.dart';
+import 'package:second_mart/features/home/widgets/story_section.dart';
+import 'package:second_mart/features/home/widgets/create_post_section.dart';
+import 'package:second_mart/features/home/create_story_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -16,6 +19,25 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final Map<String, Map<String, String?>> _userDataCache = {};
+  String? _currentUserPic;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentUserPic();
+  }
+
+  Future<void> _fetchCurrentUserPic() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final info = await _fetchUserInfo(user.uid);
+      if (mounted) {
+        setState(() {
+          _currentUserPic = info['profilePic'];
+        });
+      }
+    }
+  }
 
   Future<Map<String, String?>> _fetchUserInfo(String uid) async {
     if (uid.isEmpty || uid == 'anonymous') {
@@ -40,11 +62,17 @@ class _HomeViewState extends State<HomeView> {
     return {'name': 'User', 'profilePic': null};
   }
 
-  Future<void> _toggleLike(String postId, Map<dynamic, dynamic>? likes, String ownerId) async {
+  Future<void> _toggleLike(
+    String postId,
+    Map<dynamic, dynamic>? likes,
+    String ownerId,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final ref = FirebaseDatabase.instance.ref('posts/$postId/likes/${user.uid}');
+    final ref = FirebaseDatabase.instance.ref(
+      'posts/$postId/likes/${user.uid}',
+    );
     if (likes != null && likes.containsKey(user.uid)) {
       await ref.remove();
     } else {
@@ -64,8 +92,13 @@ class _HomeViewState extends State<HomeView> {
                 Text("You liked your own post."),
               ],
             ),
-            backgroundColor: const Color(0xFF3498DB),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2C3E50) : const Color(0xFF3498DB),
             behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).size.height - 160,
+              left: 16,
+              right: 16,
+            ),
             duration: const Duration(seconds: 2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -92,16 +125,8 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
-      appBar: AppBar(
-        title: const Text(
-          "Second Mart",
-          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 24),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        centerTitle: false,
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
       body: StreamBuilder<DatabaseEvent>(
         stream: FirebaseDatabase.instance.ref('posts').onValue,
         builder: (context, snapshot) {
@@ -112,18 +137,100 @@ class _HomeViewState extends State<HomeView> {
             return const Center(child: Text("No posts found."));
           }
 
-          final Map<dynamic, dynamic> postsMap = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+          final Map<dynamic, dynamic> postsMap =
+              snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
           final List<Map<String, dynamic>> posts = postsMap.entries.map((e) {
             final map = Map<String, dynamic>.from(e.value as Map);
             map['key'] = e.key;
             return map;
           }).toList();
 
-          posts.sort((a, b) => (b['createdAt'] ?? 0).compareTo(a['createdAt'] ?? 0));
+          posts.sort(
+            (a, b) => (b['createdAt'] ?? 0).compareTo(a['createdAt'] ?? 0),
+          );
 
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) => _buildPostCard(posts[index]),
+          return StreamBuilder<DatabaseEvent>(
+            stream: FirebaseDatabase.instance.ref('stories').onValue,
+            builder: (context, storySnap) {
+              final Map<String, Map<String, dynamic>> groupedStories = {};
+              if (storySnap.hasData && storySnap.data?.snapshot.value != null) {
+                final Map<dynamic, dynamic> storiesMap =
+                    storySnap.data!.snapshot.value as Map<dynamic, dynamic>;
+                
+                final now = DateTime.now().millisecondsSinceEpoch;
+                
+                storiesMap.forEach((key, value) {
+                  final data = Map<String, dynamic>.from(value as Map);
+                  data['id'] = key; // Keep the key for deletion
+                  final userId = data['userId'];
+                  
+                  // Only process stories that haven't expired
+                  if (data['expiresAt'] == null || data['expiresAt'] > now) {
+                    if (!groupedStories.containsKey(userId)) {
+                      groupedStories[userId] = {
+                        'userId': userId,
+                        'userName': data['userName'],
+                        'userPic': data['userPic'],
+                        'stories': [],
+                      };
+                    }
+                    groupedStories[userId]!['stories'].add(data);
+                  }
+                });
+                
+                // Sort stories within each group by creation time
+                groupedStories.forEach((userId, group) {
+                  (group['stories'] as List).sort((a, b) => (a['createdAt'] ?? 0).compareTo(b['createdAt'] ?? 0));
+                });
+              }
+
+              final List<Map<String, dynamic>> storyGroups = groupedStories.values.toList();
+              
+              final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+              // Sort groups: current user first, then by latest story time
+              storyGroups.sort((a, b) {
+                if (a['userId'] == currentUid) return -1;
+                if (b['userId'] == currentUid) return 1;
+                
+                final lastA = (a['stories'] as List).last['createdAt'] ?? 0;
+                final lastB = (b['stories'] as List).last['createdAt'] ?? 0;
+                return lastB.compareTo(lastA);
+              });
+
+              return ListView.builder(
+                itemCount: posts.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Column(
+                      children: [
+                        CreatePostSection(
+                          currentUserPic: _currentUserPic,
+                          onTap: () {
+                            // Navigate to sell or create post view
+                          },
+                        ),
+                        const Divider(height: 1, thickness: 1),
+                        StorySection(
+                          stories: storyGroups,
+                          currentUserPic: _currentUserPic,
+                          onAddStory: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreateStoryView(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    );
+                  }
+                  return _buildPostCard(posts[index - 1]);
+                },
+              );
+            },
           );
         },
       ),
@@ -145,12 +252,15 @@ class _HomeViewState extends State<HomeView> {
     }
 
     final user = FirebaseAuth.instance.currentUser;
-    final Map<dynamic, dynamic>? likes = data['likes'] != null ? Map<dynamic, dynamic>.from(data['likes'] as Map) : null;
-    final isLiked = user != null && likes != null && likes.containsKey(user.uid);
+    final Map<dynamic, dynamic>? likes = data['likes'] != null
+        ? Map<dynamic, dynamic>.from(data['likes'] as Map)
+        : null;
+    final isLiked =
+        user != null && likes != null && likes.containsKey(user.uid);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -181,8 +291,20 @@ class _HomeViewState extends State<HomeView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text("${_getTimeAgo(createdAt as int?)} • Public", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            "${_getTimeAgo(createdAt as int?)} • Public",
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -196,10 +318,28 @@ class _HomeViewState extends State<HomeView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text("Price: \$$price", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                Text("Condition: $condition"),
+                Text(
+                  "Price: \$$price",
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "Condition: $condition",
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 if (description.isNotEmpty) ExpandableText(text: description),
               ],
@@ -208,25 +348,43 @@ class _HomeViewState extends State<HomeView> {
           const SizedBox(height: 8),
           if (postImages.isNotEmpty) PostImageGrid(imageUrls: postImages),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 8.0,
+            ),
             child: Row(
               children: [
                 if (likes != null && likes.isNotEmpty) ...[
                   Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
-                    child: const Icon(Icons.thumb_up, color: Colors.white, size: 12),
+                    decoration: const BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.thumb_up,
+                      color: Colors.white,
+                      size: 12,
+                    ),
                   ),
                   const SizedBox(width: 4),
-                  Text("${likes.length}", style: TextStyle(color: Colors.grey[600])),
+                  Text(
+                    "${likes.length}",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
                 ],
                 const Spacer(),
                 StreamBuilder<DatabaseEvent>(
-                  stream: FirebaseDatabase.instance.ref('comments/$postId').onValue,
+                  stream: FirebaseDatabase.instance
+                      .ref('comments/$postId')
+                      .onValue,
                   builder: (context, commentSnap) {
                     final cData = commentSnap.data?.snapshot.value as Map?;
                     final cCount = cData?.length ?? 0;
-                    return Text("$cCount comments", style: TextStyle(color: Colors.grey[600]));
+                    return Text(
+                      "$cCount comments",
+                      style: TextStyle(color: Colors.grey[600]),
+                    );
                   },
                 ),
               ],
@@ -237,12 +395,16 @@ class _HomeViewState extends State<HomeView> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildActionButton(
-                isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined, 
-                "Like", 
+                isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                "Like",
                 color: isLiked ? Colors.blue : Colors.grey[700],
-                onTap: () => _toggleLike(postId, likes, userId)
+                onTap: () => _toggleLike(postId, likes, userId),
               ),
-              _buildActionButton(Icons.chat_bubble_outline, "Comment", onTap: () => _showComments(postId, postOwnerId: userId)),
+              _buildActionButton(
+                Icons.chat_bubble_outline,
+                "Comment",
+                onTap: () => _showComments(postId, postOwnerId: userId),
+              ),
               _buildActionButton(Icons.share_outlined, "Share", onTap: () {}),
             ],
           ),
@@ -251,7 +413,12 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String text, {Color? color, VoidCallback? onTap}) {
+  Widget _buildActionButton(
+    IconData icon,
+    String text, {
+    Color? color,
+    VoidCallback? onTap,
+  }) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -260,9 +427,19 @@ class _HomeViewState extends State<HomeView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: color ?? Colors.grey[700]),
+              Icon(
+                icon,
+                size: 20,
+                color: color ?? Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? Colors.grey[700],
+              ),
               const SizedBox(width: 8),
-              Text(text, style: TextStyle(color: color ?? Colors.grey[700], fontWeight: FontWeight.w600)),
+              Text(
+                text,
+                style: TextStyle(
+                  color: color ?? Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ?? Colors.grey[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),

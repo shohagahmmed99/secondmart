@@ -68,18 +68,18 @@ class _PostDetailViewState extends State<PostDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "Post",
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -129,7 +129,7 @@ class _PostDetailViewState extends State<PostDetailView> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -162,7 +162,10 @@ class _PostDetailViewState extends State<PostDetailView> {
                         children: [
                           Text(
                             name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           Text(
                             "${_getTimeAgo(createdAt as int?)} • Public",
@@ -187,9 +190,10 @@ class _PostDetailViewState extends State<PostDetailView> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -202,7 +206,12 @@ class _PostDetailViewState extends State<PostDetailView> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text("Condition: $condition"),
+                Text(
+                  "Condition: $condition",
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 ExpandableText(text: description),
                 const SizedBox(height: 16),
@@ -325,12 +334,16 @@ class _PostDetailViewState extends State<PostDetailView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: color ?? Colors.grey[700]),
+              Icon(
+                icon,
+                size: 20,
+                color: color ?? Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? Colors.grey[700],
+              ),
               const SizedBox(width: 8),
               Text(
                 text,
                 style: TextStyle(
-                  color: color ?? Colors.grey[700],
+                  color: color ?? Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ?? Colors.grey[700],
                   fontWeight: FontWeight.w600,
                 ),
               ),

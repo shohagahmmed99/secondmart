@@ -75,6 +75,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   'Reset Password',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -83,7 +84,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   'Enter your email address and we will send you a link to reset your password.',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                  ).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),

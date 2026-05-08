@@ -88,12 +88,12 @@ class _EditProfileViewState extends State<EditProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0.5,
-        leading: BackButton(color: Colors.black, onPressed: () => Navigator.pop(context)),
-        title: const Text("Edit Profile", style: TextStyle(color: Colors.black)),
+        leading: BackButton(color: Theme.of(context).colorScheme.onSurface, onPressed: () => Navigator.pop(context)),
+        title: Text("Edit Profile", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveProfile,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:second_mart/features/primary/primary_view.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:second_mart/features/auth/login_view.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -13,41 +14,46 @@ class _SplashViewState extends State<SplashView>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1800),
       vsync: this,
     );
 
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _scaleAnimation = Tween<double>(
+      begin: 0.6,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
 
-    _navigateToNext();
+    _initializeApp();
   }
 
-  Future<void> _navigateToNext() async {
-    try {
-      // Initialize Firebase while the splash animation is playing
-      await Future.wait([
-        Future.delayed(const Duration(seconds: 3)),
-        Firebase.initializeApp(),
-      ]);
-    } catch (e) {
-      // Handle initialization error if needed
-      debugPrint('Firebase initialization error: $e');
-    }
+  Future<void> _initializeApp() async {
+    // Wait for the animation to finish
+    await Future.delayed(const Duration(milliseconds: 2000));
 
     if (!mounted) return;
 
-    // Navigate to AuthWrapper so it can handle auth state
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const PrimaryView()),
-    );
+    // Check Firebase authentication state
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PrimaryView()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginView()),
+      );
+    }
   }
 
   @override
@@ -59,28 +65,79 @@ class _SplashViewState extends State<SplashView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
-      body: Center(
-        child: FadeTransition(
-          opacity: _animation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.shopping_cart, size: 100, color: Colors.white),
-              const SizedBox(height: 24),
-              Text(
-                'Second Mart',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+      body: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _animation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Clean Icon Container
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF1E1E1E)
+                          : const Color(
+                              0xFFEBF5FB,
+                            ), // Very light blue background
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withOpacity(0.2),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.storefront_rounded,
+                      size: 90,
+                      color: Theme.of(context).primaryColor, // Deep Blue
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Second Mart',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Your Premium Marketplace',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[400]
+                          : Colors.lightBlueAccent[600],
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ],
+            ),
           ),
         ),
       ),

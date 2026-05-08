@@ -109,12 +109,12 @@ class _NotificationViewState extends State<NotificationView> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Activity",
           style: TextStyle(
-            color: Color(0xFF1A1D1E),
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w800,
             fontSize: 24,
             letterSpacing: -0.5,
@@ -135,7 +135,7 @@ class _NotificationViewState extends State<NotificationView> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.more_horiz, color: Color(0xFF1A1D1E)),
+            icon: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -284,7 +284,7 @@ class _NotificationViewState extends State<NotificationView> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isRead ? Colors.white : const Color(0xFFEEEDFF),
+                color: isRead ? Theme.of(context).cardColor : const Color(0xFFEEEDFF).withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.15 : 1.0),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -351,8 +351,8 @@ class _NotificationViewState extends State<NotificationView> {
                       children: [
                         RichText(
                           text: TextSpan(
-                            style: const TextStyle(
-                              color: Color(0xFF1A1D1E),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 15,
                               height: 1.4,
                             ),
@@ -420,12 +420,12 @@ class _NotificationViewState extends State<NotificationView> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             "Quiet for now",
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1D1E),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
